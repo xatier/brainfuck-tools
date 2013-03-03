@@ -12,6 +12,8 @@ typedef enum {
     PUT        = '.',
     LOOP_START = '[',
     LOOP_END   = ']',
+    /* - extensions ------ */
+    ZERO       = '0',
 } command_t;
 
 typedef struct _instruction {
@@ -101,8 +103,23 @@ static instruction *compact (instruction *prog) {
     return ret;
 }
 
+static instruction *deduce_zeros (instruction *prog)
+{
+    instruction *t = prog;
+    if (prog->opcode == DEC && prog->next == NULL)
+        prog->opcode = ZERO;
+
+    while (prog) {
+        if (prog->opcode == LOOP_START)
+            prog->loop = deduce_zeros(prog->loop);
+        prog = prog->next;
+    }
+    return t;
+}
+
 instruction *optimize (instruction *prog) {
     prog = compact(prog);
+    prog = deduce_zeros(prog);
     return prog;
 }
 
@@ -116,6 +133,7 @@ static void interpret(instruction *prog)
 {
 	while (prog) {
 		switch (prog->opcode) {
+            case ZERO: *ptr = 0;                   break;
             case INC:  *ptr = *ptr + prog->value;  break;
             case DEC:  *ptr = *ptr - prog->value;  break;
 
