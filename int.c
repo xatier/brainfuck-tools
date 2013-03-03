@@ -16,6 +16,7 @@ typedef enum {
 
 typedef struct _instruction {
     command_t opcode;
+    int value;    /* repetition value: +++ = 3 */
     struct _instruction *loop;
     struct _instruction *next;
 } instruction;
@@ -62,6 +63,7 @@ static instruction *parse_iter(void)
 		ptr = cell;
 
 		cell->opcode = op;
+		cell->value = 1;
 		cell->next = NULL;
         // recursively parse loops
 		cell->loop = (op == LOOP_START) ? parse_iter() : NULL;
@@ -69,6 +71,40 @@ static instruction *parse_iter(void)
 	return prog;
 }
 
+/* Optimizations */
+
+// compact: compact repeat instructions
+static instruction *compact (instruction *prog) {
+    instruction *ret = prog;
+
+    while (prog) {
+        switch ((int) prog->opcode) {
+            case LOOP_START:
+                prog->loop = compact(prog->loop);
+                break;
+            case INC:
+            case DEC:
+            case NEXT:
+            case PREV:
+                while (prog->next &&
+                        prog->opcode == prog->next->opcode) {
+                    instruction *t = prog->next;
+
+                    prog->next = t->next;
+                    prog->value += t->value;
+                    free(t);
+                }
+                break;
+        }
+        prog = prog->next;
+    }
+    return ret;
+}
+
+instruction *optimize (instruction *prog) {
+    prog = compact(prog);
+    return prog;
+}
 
 // our tape
 #define HEAPSIZE 30000
@@ -80,14 +116,14 @@ static void interpret(instruction *prog)
 {
 	while (prog) {
 		switch (prog->opcode) {
-            case INC:   ++*ptr;             break;
-            case DEC:   --*ptr;             break;
+            case INC:  *ptr = *ptr + prog->value;  break;
+            case DEC:  *ptr = *ptr - prog->value;  break;
 
-            case NEXT:  ptr++;             break;
-            case PREV:  ptr--;             break;
+            case NEXT:  ptr += prog->value;        break;
+            case PREV:  ptr -= prog->value;        break;
 
-            case PUT:   putchar(*ptr);     break;
-            case GET:   *ptr = getchar();  break;
+            case PUT:   putchar(*ptr);             break;
+            case GET:   *ptr = getchar();          break;
 
             case LOOP_START:
                 while(*ptr) interpret(prog->loop); break;
@@ -113,7 +149,8 @@ static void free_i(instruction *prog) {
 
 int main (void) {
     instruction *prog = parse_iter();
-    interpret(prog);
+    interpret(optimize(prog));
+    //interpret(prog);
     free_i(prog);
     return 0;
 }
