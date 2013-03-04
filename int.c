@@ -36,41 +36,41 @@ static int istoken(char c)
 
 static int lex_next(void)
 {
-	int c;
+    int c;
     // skip other tokens
-	do {
-		if ((c = fgetc(stdin)) == EOF)
-			return 0;
-	} while (!istoken(c));
-	return c;
+    do {
+        if ((c = fgetc(stdin)) == EOF)
+            return 0;
+    } while (!istoken(c));
+    return c;
 }
 
 
 // prepare the linked-list of instruction cells
 static instruction *parse_iter(void)
 {
-	command_t op;
-	instruction *prog = NULL, *ptr = NULL, *cell;
+    command_t op;
+    instruction *prog = NULL, *ptr = NULL, *cell;
 
-	while ((op = lex_next()) != 0) {
-		if (op == LOOP_END)
-			return prog;
+    while ((op = lex_next()) != 0) {
+        if (op == LOOP_END)
+            return prog;
 
-		cell = (instruction *) malloc(sizeof(instruction));
+        cell = (instruction *) malloc(sizeof(instruction));
 
-		if (prog == NULL)
-			prog = cell;
-		else
-			ptr->next = cell;
-		ptr = cell;
+        if (prog == NULL)
+            prog = cell;
+        else
+            ptr->next = cell;
+        ptr = cell;
 
-		cell->opcode = op;
-		cell->value = 1;
-		cell->next = NULL;
+        cell->opcode = op;
+        cell->value = 1;
+        cell->next = NULL;
         // recursively parse loops
-		cell->loop = (op == LOOP_START) ? parse_iter() : NULL;
-	}
-	return prog;
+        cell->loop = (op == LOOP_START) ? parse_iter() : NULL;
+    }
+    return prog;
 }
 
 /* Optimizations */
@@ -103,6 +103,7 @@ static instruction *compact (instruction *prog) {
     return ret;
 }
 
+
 static instruction *deduce_zeros (instruction *prog)
 {
     instruction *t = prog;
@@ -116,6 +117,7 @@ static instruction *deduce_zeros (instruction *prog)
     }
     return t;
 }
+
 
 instruction *optimize (instruction *prog) {
     prog = compact(prog);
@@ -131,8 +133,8 @@ static char heap[HEAPSIZE], *ptr = heap;
 // interpret the list
 static void interpret(instruction *prog)
 {
-	while (prog) {
-		switch (prog->opcode) {
+    while (prog) {
+        switch (prog->opcode) {
             case ZERO: *ptr = 0;                   break;
             case INC:  *ptr = *ptr + prog->value;  break;
             case DEC:  *ptr = *ptr - prog->value;  break;
@@ -149,9 +151,9 @@ static void interpret(instruction *prog)
             default:
                 /* Ignore unknown symbol */
                 break;
-		}
-		prog = prog->next;
-	}
+        }
+        prog = prog->next;
+    }
 }
 
 static void free_i(instruction *prog) {
