@@ -101,20 +101,12 @@ static instruction *compact (instruction *prog) {
             case NEXT:
             case PREV:
                 flag1 = flag2 = 0;
-                while (prog->next && (flag1 = same(prog) )) {
-                    instruction *t = prog->next;
-                    prog->value += flag1 ? t->value : -t->value;
-                    prog->next = t->next;
-                    free(t);
-                }
-                /*
                 while (prog->next && (flag1 = same(prog) || (flag2 = another(prog)))) {
                     instruction *t = prog->next;
                     prog->value += flag1 && !flag2 ? t->value : -t->value;
                     prog->next = t->next;
                     free(t);
                 }
-                */
                 break;
         }
         prog = prog->next;
