@@ -75,9 +75,21 @@ static instruction *parse_iter(void)
 
 /* Optimizations */
 
+inline char same (instruction *prog) {
+    return (prog->opcode == prog->next->opcode);
+}
+
+inline char another (instruction *prog) {
+    return (prog->opcode == INC && prog->next->opcode == DEC) ||
+           (prog->opcode == DEC && prog->next->opcode == INC) ||
+           (prog->opcode == PREV && prog->next->opcode == NEXT) ||
+           (prog->opcode == NEXT && prog->next->opcode == PREV);
+}
+
 // compact: compact repeat instructions
 static instruction *compact (instruction *prog) {
     instruction *ret = prog;
+    register char flag1 = 0, flag2 = 0;
 
     while (prog) {
         switch ((int) prog->opcode) {
@@ -88,14 +100,21 @@ static instruction *compact (instruction *prog) {
             case DEC:
             case NEXT:
             case PREV:
-                while (prog->next &&
-                        prog->opcode == prog->next->opcode) {
+                flag1 = flag2 = 0;
+                while (prog->next && (flag1 = same(prog) )) {
                     instruction *t = prog->next;
-
+                    prog->value += flag1 ? t->value : -t->value;
                     prog->next = t->next;
-                    prog->value += t->value;
                     free(t);
                 }
+                /*
+                while (prog->next && (flag1 = same(prog) || (flag2 = another(prog)))) {
+                    instruction *t = prog->next;
+                    prog->value += flag1 && !flag2 ? t->value : -t->value;
+                    prog->next = t->next;
+                    free(t);
+                }
+                */
                 break;
         }
         prog = prog->next;
@@ -126,7 +145,7 @@ instruction *optimize (instruction *prog) {
 }
 
 // our tape
-#define HEAPSIZE 30000
+#define HEAPSIZE 500000
 static char heap[HEAPSIZE], *ptr = heap;
 
 
